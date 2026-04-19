@@ -2,12 +2,15 @@
 include 'config.php';
 include 'header.php';
 
-$name = $_SESSION['name'] ?? 'User';
-$user_id = $_SESSION['user_id'] ?? 0;
-$role = $_SESSION['role'] ?? 'student';
 
-$sql = "SELECT * FROM submissions ORDER BY id DESC LIMIT 4";
-$result = $conn->query($sql);
+if(!isset($_SESSION['user_id'])){
+    header("Location: login.php");
+    exit();
+}
+
+$user_id = $_SESSION['user_id'];
+$role = $_SESSION['role'];
+$name = $_SESSION['name'] ?? 'User';
 ?>
 
 <style>
@@ -16,7 +19,6 @@ body{
     font-family: Arial;
 }
 
-/* WELCOME BOX */
 .welcome{
     background:#2c3e50;
     color:white;
@@ -24,7 +26,6 @@ body{
     border-radius:10px;
 }
 
-/* ROLE LABEL */
 .role-box{
     margin-top:8px;
     display:inline-block;
@@ -35,7 +36,6 @@ body{
     color:white;
 }
 
-/* BOX */
 .box{
     background:white;
     padding:20px;
@@ -43,35 +43,42 @@ body{
     margin-top:20px;
 }
 
-/* BUTTON */
-.btn-view-custom{
-    display:inline-block;
-    margin-top:15px;
-    padding:10px 15px;
-    background:#8e44ad;
+/* FILE STYLE */
+.file-item{
+    padding:10px 0;
+    border-bottom:1px solid #eee;
+    display:flex;
+    justify-content:space-between;
+    align-items:center;
+}
+
+.file-left{
+    font-size:14px;
+}
+
+.file-name{
+    color:#333;
+    font-weight:500;
+}
+
+/* BUTTONS */
+.download-btn{
+    background:#1e639b;
     color:white;
+    padding:5px 10px;
+    border-radius:6px;
     text-decoration:none;
-    border-radius:8px;
-}
-/* Guna nama yang spesifik supaya tak gaduh dengan navbar */
-.btn-dashboard-view {
-    display: inline-block;    /* Wajib ada supaya padding & margin berfungsi */
-    margin-top: 15px;
-    padding: 10px 20px;
-    background-color: #8e44ad; /* Warna ungu */
-    color: #ffffff !important; /* Paksa teks jadi putih */
-    text-decoration: none !important; /* Buang garis bawah */
-    border-radius: 6px;
-    font-size: 14px;
-    font-weight: 500;
-    transition: 0.3s;
+    font-size:13px;
 }
 
-.btn-dashboard-view:hover {
-    background-color: #732d91; /* Ungu gelap sikit masa hover */
-    color: #ffffff !important;
+.delete-btn{
+    background:#e74c3c;
+    color:white;
+    padding:5px 10px;
+    border-radius:6px;
+    border:none;
+    font-size:13px;
 }
-
 </style>
 
 <div class="container mt-3">
@@ -80,7 +87,6 @@ body{
     <div class="welcome">
         <h3>Welcome <?php echo htmlspecialchars($name); ?></h3>
 
-        <!-- ROLE DISPLAY -->
         <div class="role-box">
             Role: <?php echo ucfirst($role); ?>
         </div>
@@ -89,39 +95,135 @@ body{
     <!-- CONTENT -->
     <div class="box">
 
-        <h4>Recent Submission</h4>
+        <h4>
+            <?php echo ($role == 'admin') ? 'All Submissions' : 'My Submissions'; ?>
+        </h4>
 
-        <table class="table table-bordered">
-            <tr>
-                <th>ID</th>
-                <th>Title</th>
-                <th>Date</th>
-            </tr>
+        <div class="accordion" id="submissionAccordion">
 
-            <?php
-            if($result && $result->num_rows > 0){
-                while($row = $result->fetch_assoc()){
-            ?>
-                <tr>
-                    <td><?php echo $row['id']; ?></td>
-                    <td><?php echo $row['title']; ?></td>
-                    <td><?php echo $row['created_at']; ?></td>
-                </tr>
-            <?php
-                }
-            } else {
-                echo "<tr><td colspan='3'>No submission yet</td></tr>";
-            }
-            ?>
+        <?php
+        $assignments = $conn->query("SELECT * FROM assignments ORDER BY id DESC");
 
-        </table>
+        while($a = $assignments->fetch_assoc()){
 
-        <!-- BUTTON TEXT ROLE BASED -->
-       <?php if($role == "admin"){ ?>
-        <a href="view_submission.php" class="btn-dashboard-view">View All Submission</a>
-        <?php } else { ?>
-            <a href="view_submission.php" class="btn-dashboard-view">View all your submission</a>
+            $assignment_id = $a['id'];
+        ?>
+
+            <div class="accordion-item">
+
+                <h2 class="accordion-header">
+                    <button class="accordion-button collapsed"
+                        data-bs-toggle="collapse"
+                        data-bs-target="#a<?= $assignment_id; ?>">
+
+                        <?= htmlspecialchars($a['title']); ?>
+
+                    </button>
+                </h2>
+
+                <div id="a<?= $assignment_id; ?>" class="accordion-collapse collapse"
+                    data-bs-parent="#submissionAccordion">
+
+                    <div class="accordion-body">
+
+                        <?php
+
+                        if($role == 'admin'){
+                            $sql = "SELECT users.name, submissions.file
+                                    FROM submissions
+                                    JOIN users ON submissions.user_id = users.id
+                                    WHERE submissions.assignment_id = $assignment_id";
+                        } else {
+                            $sql = "SELECT file
+                                    FROM submissions
+                                    WHERE assignment_id = $assignment_id
+                                    AND user_id = $user_id";
+                        }
+
+                        $result = $conn->query($sql);
+
+                        if($result && $result->num_rows > 0){
+
+                            while($row = $result->fetch_assoc()){
+
+                                $file = $row['file'];
+                        ?>
+
+                        <div class="file-item">
+
+                            <div class="file-left">
+
+                                <?php if($role == 'admin'){ ?>
+                                    👤 <b><?= $row['name']; ?></b><br>
+                                <?php } ?>
+
+                                📄 <span class="file-name"><?= htmlspecialchars($file); ?></span>
+
+                            </div>
+
+                            <div class="d-flex gap-2">
+
+                                <a class="download-btn" href="uploads/<?= $file; ?>">
+                                    Download
+                                </a>
+
+                                <button class="delete-btn"
+                                    data-bs-toggle="modal"
+                                    data-bs-target="#del<?= md5($file); ?>">
+                                    Delete
+                                </button>
+
+                            </div>
+
+                        </div>
+
+                        <!-- DELETE MODAL -->
+                        <div class="modal fade" id="del<?= md5($file); ?>" tabindex="-1">
+                          <div class="modal-dialog modal-dialog-centered">
+                            <div class="modal-content">
+
+                              <div class="modal-header">
+                                <h5 class="modal-title">Confirm Delete</h5>
+                                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                              </div>
+
+                              <div class="modal-body">
+                                Are you sure want to delete this file?
+                                <br><b><?= htmlspecialchars($file); ?></b>
+                              </div>
+
+                              <div class="modal-footer">
+                                <button class="btn btn-secondary" data-bs-dismiss="modal">
+                                    Cancel
+                                </button>
+
+                                <a href="delete.php?file=<?= $file; ?>"
+                                   class="btn btn-danger">
+                                   Yes Delete
+                                </a>
+                              </div>
+
+                            </div>
+                          </div>
+                        </div>
+
+                        <?php
+                            }
+
+                        } else {
+                            echo "No submission yet";
+                        }
+                        ?>
+
+                    </div>
+
+                </div>
+
+            </div>
+
         <?php } ?>
+
+        </div>
 
     </div>
 
