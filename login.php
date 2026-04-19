@@ -2,7 +2,7 @@
 // Show all PHP errors
 error_reporting(E_ALL);
 ini_set('display_errors', 1);
-
+// session_start();
 // Include database connection file
 include 'config.php';
 
@@ -55,7 +55,7 @@ if(isset($_POST['login'])){
 
         // Store user info in session
         $_SESSION['user_id'] = $user['id'];
-        $_SESSION['name'] = $user['username'];
+        $_SESSION['name'] = $user['name'];
 
         // Redirect to dashboard
         header("Location: dashboard.php");

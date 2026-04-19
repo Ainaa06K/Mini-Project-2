@@ -14,7 +14,7 @@ body { background: linear-gradient(to right, #eef2f3, #e7eff8); }
 
 <nav class="navbar navbar-dark navbar-custom">
 <div class="container-fluid">
-<span class="navbar-brand">Student Portal</span>
+<span class="navbar-brand">Assignment submission System</span>
 <div>
  <!-- Check if user is logged in -->
 <?php if(isset($_SESSION['user_id'])): ?>
