@@ -60,7 +60,7 @@ if(isset($_POST['login'])){
 
         if($user && password_verify($password, $user['password'])){
 
-            // 🔥 SIMPAN SESSION (IMPORTANT)
+            //  SAVE SESSION (IMPORTANT)
             $_SESSION['user_id'] = $user['id'];
             $_SESSION['name'] = $user['name'];
             $_SESSION['role'] = $user['role'];
