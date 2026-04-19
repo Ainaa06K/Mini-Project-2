@@ -1,142 +1,86 @@
 <?php
 session_start();
-
 $role = $_SESSION['role'] ?? '';
 $user_id = $_SESSION['user_id'] ?? null;
 ?>
-
 <!DOCTYPE html>
 <html>
 <head>
-<title>Student Portal</title>
+    <title>Student Portal</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <style>
+        .navbar-custom {
+            background-color: #1f2a44;
+            padding: 10px 0; /* Tambah ruang atas bawah */
+        }
 
-<link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+        /* Grouping buttons and forcing alignment */
+        .nav-buttons {
+            display: flex;
+            align-items: center; /* Paksa butang duduk tengah secara menegak */
+            gap: 10px; /* Jarak antara butang */
+        }
 
-<style>
-/* NAVBAR */
-.navbar-custom {
-    background-color: #1f2a44;
-}
+        /* Custom Button Styles */
+        .btn-custom {
+            border: none;
+            color: white !important;
+            font-size: 14px;
+            padding: 6px 15px;
+            border-radius: 6px;
+            transition: 0.3s;
+            text-decoration: none;
+            display: inline-flex;
+            align-items: center;
+            height: 36px; /* Paksa semua butang sama tinggi */
+        }
 
-/* DASHBOARD - Grey Blue */
-.btn-dashboard {
-    background-color: #7b7dac;
-    color: white;
-    border: none;
-}
-.btn-dashboard:hover {
-    background-color: #3a3f68;
-    color: white;
-}
+        .btn-dashboard { background-color: #7b7dac; }
+        .btn-dashboard:hover { background-color: #3a3f68; }
 
-/* CREATE ASSIGNMENT - Orange */
-.btn-create {
-    background-color: #8992ae;
-    color: white;
-    border: none;
-}
-.btn-create:hover {
-    background-color: #27436f;
-    color: white;
-}
+        .btn-create { background-color: #8992ae; }
+        .btn-create:hover { background-color: #27436f; }
 
-/* SUBMIT ASSIGNMENT - Blue */
-.btn-submit {
-    background-color: #1e639b;
-    color: white;
-    border: none;
-}
-.btn-submit:hover {
-    background-color: #5d9ddc;
-    color: white;
-}
+        .btn-submit { background-color: #1e639b; }
+        .btn-submit:hover { background-color: #1976d2; }
 
-/* VIEW SUBMISSION - Purple */
-.btn-view {
-    background-color: #9c27b0;
-    color: white;
-    border: none;
-}
-.btn-view:hover {
-    background-color: #7b1fa2;
-    color: white;
-}
+        .btn-view { background-color: #9c27b0; }
+        .btn-view:hover { background-color: #7b1fa2; }
 
-/* LOGIN - Green */
-.btn-login {
-    background-color: #4caf50;
-    color: white;
-    border: none;
-}
-.btn-login:hover {
-    background-color: #388e3c;
-    color: white;
-}
+        .btn-logout { background-color: #f44336; }
+        .btn-logout:hover { background-color: #d32f2f; }
 
-/* REGISTER - Teal */
-.btn-register {
-    background-color: #00bcd4;
-    color: white;
-    border: none;
-}
-.btn-register:hover {
-    background-color: #0097a7;
-    color: white;
-}
-
-/* LOGOUT - Red */
-.btn-logout {
-    background-color: #f44336;
-    color: white;
-    border: none;
-}
-.btn-logout:hover {
-    background-color: #d32f2f;
-    color: white;
-}
-
-/* smooth */
-.btn {
-    transition: 0.3s;
-}
-</style>
+        .btn-login { background-color: #4caf50; }
+        .btn-register { background-color: #00bcd4; }
+    </style>
 </head>
-
 <body>
 
 <nav class="navbar navbar-dark navbar-custom">
-<div class="container-fluid">
+    <div class="container-fluid d-flex align-items-center justify-content-between">
+        
+        <a class="navbar-brand m-0" href="dashboard.php">Assignment Submission System</a>
 
-<span class="navbar-brand">Assignment Submission System</span>
+        <div class="nav-buttons">
+            <?php if($user_id): ?>
+                <a class="btn-custom btn-dashboard" href="dashboard.php">Dashboard</a>
 
-<div>
+                <?php if($role == 'admin'): ?>
+                    <a class="btn-custom btn-create" href="create_assignment.php">Create Assignment</a>
+                    <a class="btn-custom btn-view" href="view_submission.php">View Submission</a>
+                <?php endif; ?>
 
-<?php if($user_id): ?>
+                <?php if($role == 'student'): ?>
+                    <a class="btn-custom btn-submit" href="submit_assignment.php">Submit Assignment</a>
+                    <a class="btn-custom btn-view" href="view_submission.php">View Submission</a>
+                <?php endif; ?>
 
-    <a class="btn btn-dashboard btn-sm" href="dashboard.php">Dashboard</a>
+                <a class="btn-custom btn-logout" href="logout.php">Logout</a>
+            <?php else: ?>
+                <a class="btn-custom btn-login" href="login.php">Login</a>
+                <a class="btn-custom btn-register" href="register.php">Register</a>
+            <?php endif; ?>
+        </div>
 
-    <?php if($role == 'admin'): ?>
-        <a class="btn btn-create btn-sm" href="create_assignment.php">Create Assignment</a>
-        <a class="btn btn-view btn-sm" href="view_submission.php">View Submission</a>
-    <?php endif; ?>
-
-    <?php if($role == 'student'): ?>
-        <a class="btn btn-submit btn-sm" href="submit_assignment.php">Submit Assignment</a>
-        <a class="btn btn-view btn-sm" href="view_submission.php">View Submission</a>
-    <?php endif; ?>
-
-    <a class="btn btn-logout btn-sm" href="logout.php">Logout</a>
-
-<?php else: ?>
-
-    <a class="btn btn-login btn-sm" href="login.php">Login</a>
-    <a class="btn btn-register btn-sm" href="register.php">Register</a>
-
-<?php endif; ?>
-
-</div>
-
-</div>
+    </div>
 </nav>
-
-<div class="container mt-3">
