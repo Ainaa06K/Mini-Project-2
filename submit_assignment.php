@@ -9,9 +9,12 @@ if(!isset($_SESSION['user_id'])){
 
 $msg = "";
 
+/* GET ASSIGNMENTS FOR DROPDOWN */
+$assignments = $conn->query("SELECT * FROM assignments");
+
 if(isset($_POST['submit'])){
 
-    $title = trim($_POST['title']);
+    $assignment_id = $_POST['assignment_id'];
 
     $file = $_FILES['file']['name'];
     $tmp = $_FILES['file']['tmp_name'];
@@ -19,16 +22,16 @@ if(isset($_POST['submit'])){
     $error = $_FILES['file']['error'];
 
     $ext = strtolower(pathinfo($file, PATHINFO_EXTENSION));
-    $allowed = ['pdf','docx','txt'];
+    $allowed = ['pdf','docx','txt','pptx'];
 
-    if(empty($title)){
-        $msg = "<div class='alert alert-danger'>Title required</div>";
+    if(empty($assignment_id)){
+        $msg = "<div class='alert alert-danger'>Please select assignment</div>";
     }
     elseif($error != 0){
         $msg = "<div class='alert alert-danger'>Upload file</div>";
     }
     elseif(!in_array($ext, $allowed)){
-        $msg = "<div class='alert alert-danger'>Only PDF, DOCX, TXT allowed</div>";
+        $msg = "<div class='alert alert-danger'>Invalid file type</div>";
     }
     elseif($size > 2000000){
         $msg = "<div class='alert alert-danger'>Max 2MB</div>";
@@ -43,13 +46,13 @@ if(isset($_POST['submit'])){
 
         move_uploaded_file($tmp, "uploads/".$newFile);
 
-        // INSERT SUBMISSION (NO DESCRIPTION)
-        $stmt = $conn->prepare("INSERT INTO submissions (user_id,title,file) VALUES (?,?,?)");
+        /* INSERT WITH assignment_id */
+        $stmt = $conn->prepare("INSERT INTO submissions (user_id, assignment_id, file) VALUES (?,?,?)");
 
         $stmt->bind_param(
-            "isss",
+            "iis",
             $_SESSION['user_id'],
-            $title,
+            $assignment_id,
             $newFile
         );
 
@@ -73,7 +76,17 @@ if(isset($_POST['submit'])){
 
 <form method="POST" enctype="multipart/form-data" id="formSubmit">
 
-<input class="form-control mb-2" name="title" placeholder="Title" required>
+<!-- DROPDOWN -->
+<select class="form-control mb-2" name="assignment_id" required>
+    <option value="">-- Select Assignment --</option>
+
+    <?php while($row = $assignments->fetch_assoc()){ ?>
+        <option value="<?= $row['id']; ?>">
+            <?= $row['title']; ?>
+        </option>
+    <?php } ?>
+
+</select>
 
 <input class="form-control mb-2" type="file" name="file" required>
 
@@ -90,7 +103,7 @@ document.getElementById("formSubmit").addEventListener("submit", function(e){
     let file = document.querySelector("[name='file']").value.toLowerCase();
 
     if(file !== "" && !(file.endsWith(".pdf") || file.endsWith(".docx") || file.endsWith(".txt") || file.endsWith(".pptx"))){
-        alert("Only PDF, DOCX, TXT, and PPTX allowed");
+        alert("Only PDF, DOCX, TXT, PPTX allowed");
         e.preventDefault();
     }
 });
