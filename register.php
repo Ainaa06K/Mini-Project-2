@@ -1,5 +1,4 @@
 <?php
-// session_start();
 include 'config.php';
 include 'header.php';
 
@@ -10,66 +9,56 @@ if($_SERVER['REQUEST_METHOD'] == 'POST'){
     $name = trim($_POST['name']);
     $email = trim($_POST['email']);
     $password = $_POST['password'];
-
-    // AUTO ROLE (WAJIB)
     $role = "student";
 
-    // VALIDATION
     if(empty($name) || empty($email) || empty($password)){
         $msg = "<div class='alert alert-danger'>All fields required</div>";
     }
     elseif(!filter_var($email, FILTER_VALIDATE_EMAIL)){
-        $msg = "<div class='alert alert-danger'>Invalid email format</div>";
+        $msg = "<div class='alert alert-danger'>Invalid email</div>";
     }
-    else {
+    elseif(strlen($password) < 6){
+        $msg = "<div class='alert alert-danger'>Password must be at least 6 characters</div>";
+    }
+    else{
 
-        // CHECK NAME
-        $checkName = $conn->prepare("SELECT id FROM users WHERE name=?");
-        $checkName->bind_param("s", $name);
-        $checkName->execute();
-        $checkName->store_result();
+        // CHECK EMAIL
+        $checkEmail = $conn->prepare("SELECT id FROM users WHERE email=?");
 
-        if($checkName->num_rows > 0){
-            $msg = "<div class='alert alert-danger'>Name already exists</div>";
+        $checkEmail->bind_param("s", $email);
+
+        $checkEmail->execute();
+
+        $checkEmail->store_result();
+
+        if($checkEmail->num_rows > 0){
+            $msg = "<div class='alert alert-danger'>Email already exists</div>";
         } else {
 
-            // CHECK EMAIL
-            $checkEmail = $conn->prepare("SELECT id FROM users WHERE email=?");
-            $checkEmail->bind_param("s", $email);
-            $checkEmail->execute();
-            $checkEmail->store_result();
+            $hashed = password_hash($password, PASSWORD_DEFAULT);
 
-            if($checkEmail->num_rows > 0){
-                $msg = "<div class='alert alert-danger'>Email already exists</div>";
+            // INSERT USER
+            $stmt = $conn->prepare("INSERT INTO users(name,email,password,role) VALUES(?,?,?,?)");
+
+            $stmt->bind_param("ssss", $name, $email, $hashed, $role);
+
+            if($stmt->execute()){
+                $msg = "<div class='alert alert-success'>Register successful</div>";
             } else {
-
-                // HASH PASSWORD
-                $hashed = password_hash($password, PASSWORD_DEFAULT);
-
-                // INSERT USER
-                $stmt = $conn->prepare("
-                    INSERT INTO users(name,email,password,role) 
-                    VALUES(?,?,?,?)
-                ");
-
-                $stmt->bind_param("ssss", $name, $email, $hashed, $role);
-
-                if($stmt->execute()){
-                    $msg = "<div class='alert alert-success'>Registered successfully</div>";
-                } else {
-                    $msg = "<div class='alert alert-danger'>Error registering user</div>";
-                }
+                $msg = "<div class='alert alert-danger'>Error</div>";
             }
+
+            $stmt->close();
         }
+
+        $checkEmail->close();
     }
 }
 ?>
 
 <div class="container mt-5">
-
-<div class="card p-4 mx-auto" style="max-width:500px; border-radius:12px; box-shadow:0 2px 10px rgba(0,0,0,0.1);">
-
-<h3 class="text-center mb-3">Register</h3>
+<div class="card p-4 mx-auto" style="max-width:500px;">
+<h3>Register</h3>
 
 <?= $msg ?>
 
@@ -85,16 +74,14 @@ if($_SERVER['REQUEST_METHOD'] == 'POST'){
 
 </form>
 
-<p class="text-center mt-3">
+<p class="mt-3 text-center">
 Already have account? <a href="login.php">Login</a>
 </p>
 
 </div>
-
 </div>
 
 <script>
-// CLIENT-SIDE VALIDATION
 document.getElementById("registerForm").addEventListener("submit", function(e){
 
     let name = document.querySelector("[name='name']").value.trim();
@@ -107,7 +94,7 @@ document.getElementById("registerForm").addEventListener("submit", function(e){
     }
 
     if(pass.length < 6){
-        alert("Password must be at least 6 characters");
+        alert("Password too short");
         e.preventDefault();
     }
 });
