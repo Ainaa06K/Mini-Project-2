@@ -3,7 +3,11 @@ include 'config.php';
 include 'header.php';
 
 $name = $_SESSION['name'] ?? 'User';
-$role = $_SESSION['role'] ?? 'student';
+$user_id = $_SESSION['user_id'] ?? 0;
+
+/* GET LATEST 4 SUBMISSIONS */
+$sql = "SELECT * FROM submissions ORDER BY id DESC LIMIT 4";
+$result = $conn->query($sql);
 ?>
 
 <style>
@@ -28,32 +32,36 @@ body {
     margin-bottom: 20px;
 }
 
-.btn-box {
-    display: flex;
-    gap: 15px;
-    flex-wrap: wrap;
-}
-
 .action-btn {
-    flex: 1;
-    padding: 15px;
+    display: inline-block;
+    padding: 12px 18px;
     border-radius: 10px;
     text-align: center;
     text-decoration: none;
     color: white;
     font-weight: bold;
+    margin-top: 15px;
 }
 
-.submit-btn {
-    background: #27ae60;
+.more-btn {
+    background: #8e44ad;
 }
 
-.view-btn {
-    background: #2980b9;
+.more-btn:hover {
+    background: #6d2c91;
+    color: white;
 }
 
-.admin-btn {
-    background: #f39c12;
+/* table */
+table {
+    width: 100%;
+    border-collapse: collapse;
+    margin-top: 10px;
+}
+
+th, td {
+    padding: 10px;
+    border-bottom: 1px solid #ddd;
 }
 </style>
 
@@ -62,46 +70,34 @@ body {
     <!-- WELCOME -->
     <div class="welcome-box">
         <h2>Welcome, <?= htmlspecialchars($name) ?></h2>
-        <p>Role: <?= htmlspecialchars($role) ?></p>
+        <p>Latest submissions overview</p>
     </div>
 
-    <!-- ADMIN DASHBOARD -->
-    <?php if($role == 'admin'): ?>
+    <!-- LATEST SUBMISSIONS -->
+    <div class="card-box">
+        <h3>Recent Submissions (Latest 4)</h3>
 
-        <div class="card-box">
-            <h3>Admin Panel</h3>
-            <p>Manage system below</p>
+        <table>
+            <tr>
+                <th>ID</th>
+                <th>Title</th>
+                <th>Date</th>
+            </tr>
 
-            <div class="btn-box">
-                <a href="create_assignment.php" class="action-btn admin-btn">
-                    Create Assignment
-                </a>
+            <?php while($row = $result->fetch_assoc()): ?>
+            <tr>
+                <td><?= $row['id'] ?></td>
+                <td><?= htmlspecialchars($row['title'] ?? '-') ?></td>
+                <td><?= $row['created_at'] ?? '-' ?></td>
+            </tr>
+            <?php endwhile; ?>
+        </table>
 
-                <a href="view_submission.php" class="action-btn view-btn">
-                    View Submission
-                </a>
-            </div>
-        </div>
-
-    <!-- STUDENT DASHBOARD -->
-    <?php else: ?>
-
-        <div class="card-box">
-            <h3>Student Panel</h3>
-            <p>Choose your action</p>
-
-            <div class="btn-box">
-                <a href="submit_assignment.php" class="action-btn submit-btn">
-                    Submit Work
-                </a>
-
-                <a href="view_submission.php" class="action-btn view-btn">
-                    View Submission
-                </a>
-            </div>
-        </div>
-
-    <?php endif; ?>
+        <!-- VIEW ALL BUTTON -->
+        <a href="view_submission.php" class="action-btn more-btn">
+            View All Submission
+        </a>
+    </div>
 
 </div>
 
