@@ -3,107 +3,105 @@ include 'config.php';
 include 'header.php';
 
 $name = $_SESSION['name'] ?? 'User';
-
-$query = "SELECT u.name, a.title, s.file 
-          FROM submissions s
-          JOIN users u ON s.user_id = u.id
-          JOIN assignments a ON s.assignment_id = a.id";
-
-$result = $conn->query($query);
+$role = $_SESSION['role'] ?? 'student';
 ?>
 
 <style>
 body {
     background: #f4f6f9;
-    font-family: Arial, sans-serif;
+    font-family: Arial;
 }
 
-.container {
-    margin-top: 30px;
-}
-
-.card-box {
-    background: #ffffff;
-    padding: 20px;
-    border-radius: 10px;
-    box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+.welcome-box {
+    background: linear-gradient(135deg, #2c3e50, #34495e);
+    color: white;
+    padding: 25px;
+    border-radius: 12px;
     margin-bottom: 20px;
 }
 
-h2 {
-    color: #2c3e50;
-    margin-bottom: 5px;
+.card-box {
+    background: white;
+    padding: 20px;
+    border-radius: 12px;
+    box-shadow: 0 2px 10px rgba(0,0,0,0.08);
+    margin-bottom: 20px;
 }
 
-h3 {
-    color: #34495e;
-    margin-top: 0;
+.btn-box {
+    display: flex;
+    gap: 15px;
+    flex-wrap: wrap;
 }
 
-table {
-    width: 100%;
-    border-collapse: collapse;
-    background: #ffffff;
+.action-btn {
+    flex: 1;
+    padding: 15px;
     border-radius: 10px;
-    overflow: hidden;
-    box-shadow: 0 2px 8px rgba(0,0,0,0.05);
-}
-
-th {
-    background: #2c3e50;
-    color: #ffffff;
-    text-align: left;
-    padding: 12px;
-}
-
-td {
-    padding: 12px;
-    border-bottom: 1px solid #eee;
-}
-
-tr:hover {
-    background: #f2f2f2;
-}
-
-a {
-    color: #2c3e50;
+    text-align: center;
     text-decoration: none;
+    color: white;
     font-weight: bold;
 }
 
-a:hover {
-    text-decoration: underline;
+.submit-btn {
+    background: #27ae60;
+}
+
+.view-btn {
+    background: #2980b9;
+}
+
+.admin-btn {
+    background: #f39c12;
 }
 </style>
 
-<div class="container">
+<div class="container mt-4">
 
-    <div class="card-box">
+    <!-- WELCOME -->
+    <div class="welcome-box">
         <h2>Welcome, <?= htmlspecialchars($name) ?></h2>
-        <h3>Dashboard Submissions</h3>
+        <p>Role: <?= htmlspecialchars($role) ?></p>
     </div>
 
-    <div class="card-box">
-        <table>
-            <tr>
-                <th>Student</th>
-                <th>Assignment</th>
-                <th>File</th>
-            </tr>
+    <!-- ADMIN DASHBOARD -->
+    <?php if($role == 'admin'): ?>
 
-            <?php while($row = $result->fetch_assoc()): ?>
-            <tr>
-                <td><?= htmlspecialchars($row['name']) ?></td>
-                <td><?= htmlspecialchars($row['title']) ?></td>
-                <td>
-                    <a href="uploads/<?= htmlspecialchars($row['file']) ?>" download>
-                        Download
-                    </a>
-                </td>
-            </tr>
-            <?php endwhile; ?>
-        </table>
-    </div>
+        <div class="card-box">
+            <h3>Admin Panel</h3>
+            <p>Manage system below</p>
+
+            <div class="btn-box">
+                <a href="create_assignment.php" class="action-btn admin-btn">
+                    Create Assignment
+                </a>
+
+                <a href="view_submission.php" class="action-btn view-btn">
+                    View Submission
+                </a>
+            </div>
+        </div>
+
+    <!-- STUDENT DASHBOARD -->
+    <?php else: ?>
+
+        <div class="card-box">
+            <h3>Student Panel</h3>
+            <p>Choose your action</p>
+
+            <div class="btn-box">
+                <a href="submit_assignment.php" class="action-btn submit-btn">
+                    Submit Work
+                </a>
+
+                <a href="view_submission.php" class="action-btn view-btn">
+                    View Submission
+                </a>
+            </div>
+        </div>
+
+    <?php endif; ?>
 
 </div>
 

@@ -9,5 +9,5 @@ if ($conn->connect_error) {
 }
 
 // Start session (used for login system and user data)
-session_start();
+// session_start();
 ?>
