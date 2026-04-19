@@ -37,9 +37,9 @@ if(isset($_POST['login'])){
 
             // ROLE REDIRECT
             if($user['role'] == 'admin'){
-                header("Location: admin_dashboard.php");
+                header("Location: dashboard.php");
             } else {
-                header("Location: student_dashboard.php");
+                header("Location: dashboard.php");
             }
             exit();
 
