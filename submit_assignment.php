@@ -1,5 +1,5 @@
 <?php
-// session_start();
+session_start();
 include 'config.php';
 include 'header.php';
 
@@ -21,29 +21,32 @@ if(isset($_POST['submit'])){
     $error = $_FILES['file']['error'];
 
     $ext = strtolower(pathinfo($file, PATHINFO_EXTENSION));
+    $allowed = ['pdf','docx','txt'];
 
     if(empty($title) || empty($description)){
         $msg = "<div class='alert alert-danger'>All fields required</div>";
     }
     elseif($error != 0){
-        $msg = "<div class='alert alert-danger'>Please upload a file</div>";
+        $msg = "<div class='alert alert-danger'>Upload file</div>";
     }
-    elseif($ext != "pdf"){
-        $msg = "<div class='alert alert-danger'>Only PDF allowed</div>";
+    elseif(!in_array($ext, $allowed)){
+        $msg = "<div class='alert alert-danger'>Only PDF, DOCX, TXT allowed</div>";
     }
     elseif($size > 2000000){
-        $msg = "<div class='alert alert-danger'>File too large (max 2MB)</div>";
+        $msg = "<div class='alert alert-danger'>Max 2MB</div>";
     }
-    else {
+    else{
 
-        $newFile = time() . "_" . $file;
+        if(!is_dir("uploads")){
+            mkdir("uploads");
+        }
 
-        move_uploaded_file($tmp, "uploads/" . $newFile);
+        $newFile = time()."_".$file;
 
-        $stmt = $conn->prepare("
-            INSERT INTO submissions (user_id, title, description, file)
-            VALUES (?, ?, ?, ?)
-        ");
+        move_uploaded_file($tmp, "uploads/".$newFile);
+
+        // INSERT SUBMISSION
+        $stmt = $conn->prepare("INSERT INTO submissions (user_id,title,description,file) VALUES (?,?,?,?)");
 
         $stmt->bind_param(
             "isss",
@@ -54,17 +57,18 @@ if(isset($_POST['submit'])){
         );
 
         if($stmt->execute()){
-            $msg = "<div class='alert alert-success'>Assignment submitted successfully</div>";
+            $msg = "<div class='alert alert-success'>Submitted successfully</div>";
         } else {
-            $msg = "<div class='alert alert-danger'>Failed to submit</div>";
+            $msg = "<div class='alert alert-danger'>Error submitting</div>";
         }
+
+        $stmt->close();
     }
 }
 ?>
 
 <div class="container mt-4">
-
-<div class="card p-4 mx-auto" style="max-width:600px; border-radius:12px;">
+<div class="card p-4 mx-auto" style="max-width:600px;">
 
 <h3>Submit Assignment</h3>
 
@@ -72,18 +76,17 @@ if(isset($_POST['submit'])){
 
 <form method="POST" enctype="multipart/form-data" id="formSubmit">
 
-<input class="form-control mb-2" name="title" placeholder="Assignment Title" required>
+<input class="form-control mb-2" name="title" placeholder="Title" required>
 
 <textarea class="form-control mb-2" name="description" placeholder="Description" required></textarea>
 
 <input class="form-control mb-2" type="file" name="file" required>
 
-<button class="btn btn-success w-100" name="submit">Submit Assignment</button>
+<button class="btn btn-success w-100" name="submit">Submit</button>
 
 </form>
 
 </div>
-
 </div>
 
 <script>
@@ -91,8 +94,8 @@ document.getElementById("formSubmit").addEventListener("submit", function(e){
 
     let file = document.querySelector("[name='file']").value.toLowerCase();
 
-    if(file !== "" && !file.endsWith(".pdf")){
-        alert("Only PDF allowed");
+    if(file !== "" && !(file.endsWith(".pdf") || file.endsWith(".docx") || file.endsWith(".txt"))){
+        alert("Only PDF, DOCX, TXT allowed");
         e.preventDefault();
     }
 });
