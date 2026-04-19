@@ -3,6 +3,7 @@ include 'config.php';
 include 'header.php';
 
 
+
 if(!isset($_SESSION['user_id'])){
     header("Location: login.php");
     exit();
@@ -19,6 +20,7 @@ body{
     font-family: Arial;
 }
 
+/* WELCOME */
 .welcome{
     background:#2c3e50;
     color:white;
@@ -43,7 +45,7 @@ body{
     margin-top:20px;
 }
 
-/* FILE STYLE */
+/* FILE */
 .file-item{
     padding:10px 0;
     border-bottom:1px solid #eee;
@@ -111,16 +113,36 @@ body{
 
             <div class="accordion-item">
 
-                <h2 class="accordion-header">
-                    <button class="accordion-button collapsed"
+                <!-- HEADER -->
+                <div class="d-flex justify-content-between align-items-center w-100">
+
+                    <button class="accordion-button collapsed flex-grow-1"
                         data-bs-toggle="collapse"
                         data-bs-target="#a<?= $assignment_id; ?>">
 
                         <?= htmlspecialchars($a['title']); ?>
 
                     </button>
-                </h2>
 
+                    <!-- ADMIN DELETE ASSIGNMENT -->
+                    <?php if($role == 'admin'){ ?>
+                        <a href="delete_assignment.php?id=<?= $assignment_id; ?>"
+                           onclick="return confirm('Delete this assignment? All submissions will also be deleted!')"
+                           style="
+                                margin-left:10px;
+                                background:#e74c3c;
+                                color:white;
+                                padding:6px 10px;
+                                border-radius:6px;
+                                text-decoration:none;
+                                font-size:12px;">
+                            Delete
+                        </a>
+                    <?php } ?>
+
+                </div>
+
+                <!-- BODY -->
                 <div id="a<?= $assignment_id; ?>" class="accordion-collapse collapse"
                     data-bs-parent="#submissionAccordion">
 
@@ -177,7 +199,7 @@ body{
 
                         </div>
 
-                        <!-- DELETE MODAL -->
+                        <!-- DELETE SUBMISSION MODAL -->
                         <div class="modal fade" id="del<?= md5($file); ?>" tabindex="-1">
                           <div class="modal-dialog modal-dialog-centered">
                             <div class="modal-content">
