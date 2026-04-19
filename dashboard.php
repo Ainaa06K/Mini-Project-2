@@ -75,7 +75,7 @@ th, td {
 
     <!-- LATEST SUBMISSIONS -->
     <div class="card-box">
-        <h3>Recent Submissions (Latest 4)</h3>
+        <h3>Recent Submissions</h3>
 
         <table>
             <tr>

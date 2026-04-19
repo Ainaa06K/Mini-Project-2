@@ -1,5 +1,4 @@
 <?php
-session_start();
 include 'config.php';
 include 'header.php';
 
@@ -13,7 +12,6 @@ $msg = "";
 if(isset($_POST['submit'])){
 
     $title = trim($_POST['title']);
-    $description = trim($_POST['description']);
 
     $file = $_FILES['file']['name'];
     $tmp = $_FILES['file']['tmp_name'];
@@ -23,8 +21,8 @@ if(isset($_POST['submit'])){
     $ext = strtolower(pathinfo($file, PATHINFO_EXTENSION));
     $allowed = ['pdf','docx','txt'];
 
-    if(empty($title) || empty($description)){
-        $msg = "<div class='alert alert-danger'>All fields required</div>";
+    if(empty($title)){
+        $msg = "<div class='alert alert-danger'>Title required</div>";
     }
     elseif($error != 0){
         $msg = "<div class='alert alert-danger'>Upload file</div>";
@@ -45,14 +43,13 @@ if(isset($_POST['submit'])){
 
         move_uploaded_file($tmp, "uploads/".$newFile);
 
-        // INSERT SUBMISSION
-        $stmt = $conn->prepare("INSERT INTO submissions (user_id,title,description,file) VALUES (?,?,?,?)");
+        // INSERT SUBMISSION (NO DESCRIPTION)
+        $stmt = $conn->prepare("INSERT INTO submissions (user_id,title,file) VALUES (?,?,?)");
 
         $stmt->bind_param(
             "isss",
             $_SESSION['user_id'],
             $title,
-            $description,
             $newFile
         );
 
@@ -78,8 +75,6 @@ if(isset($_POST['submit'])){
 
 <input class="form-control mb-2" name="title" placeholder="Title" required>
 
-<textarea class="form-control mb-2" name="description" placeholder="Description" required></textarea>
-
 <input class="form-control mb-2" type="file" name="file" required>
 
 <button class="btn btn-success w-100" name="submit">Submit</button>
@@ -94,8 +89,8 @@ document.getElementById("formSubmit").addEventListener("submit", function(e){
 
     let file = document.querySelector("[name='file']").value.toLowerCase();
 
-    if(file !== "" && !(file.endsWith(".pdf") || file.endsWith(".docx") || file.endsWith(".txt"))){
-        alert("Only PDF, DOCX, TXT allowed");
+    if(file !== "" && !(file.endsWith(".pdf") || file.endsWith(".docx") || file.endsWith(".txt") || file.endsWith(".pptx"))){
+        alert("Only PDF, DOCX, TXT, and PPTX allowed");
         e.preventDefault();
     }
 });
