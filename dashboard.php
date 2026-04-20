@@ -126,7 +126,10 @@ body{
 
                     <!-- ADMIN DELETE ASSIGNMENT -->
                     <?php if($role == 'admin'){ ?>
-                        <a href="delete_assignment.php?id=<?= $assignment_id; ?>"
+                        <form method="POST" action="delete_submission.php">
+                            <input type="hidden" name="file" value="<?= $file; ?>">
+                            <button class="delete-btn">Delete</button>
+                        </form>
                            onclick="return confirm('Delete this assignment? All submissions will also be deleted!')"
                            style="
                                 margin-left:10px;
@@ -151,15 +154,20 @@ body{
                         <?php
 
                         if($role == 'admin'){
-                            $sql = "SELECT users.name, submissions.file
-                                    FROM submissions
-                                    JOIN users ON submissions.user_id = users.id
-                                    WHERE submissions.assignment_id = $assignment_id";
+                           $stmt = $conn->prepare("
+                                SELECT users.name, submissions.file 
+                                FROM submissions 
+                                JOIN users ON submissions.user_id = users.id 
+                                WHERE submissions.assignment_id = ?
+                            ");
+                            $stmt->bind_param("i", $assignment_id);
+                            $stmt->execute();
+                            $result = $stmt->get_result();
                         } else {
-                            $sql = "SELECT file
-                                    FROM submissions
-                                    WHERE assignment_id = $assignment_id
-                                    AND user_id = $user_id";
+                           $stmt = $conn->prepare("SELECT file FROM submissions WHERE assignment_id=? AND user_id=?");
+                           $stmt->bind_param("ii", $assignment_id, $user_id);
+                           $stmt->execute();
+                           $result = $stmt->get_result();
                         }
 
                         $result = $conn->query($sql);
