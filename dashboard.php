@@ -13,7 +13,6 @@ $role = $_SESSION['role'];
 $name = $_SESSION['name'] ?? 'User';
 ?>
 
-<!-- BOOTSTRAP -->
 <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
 
@@ -50,7 +49,7 @@ body{
 .assignment-header{
     display:flex;
     justify-content:space-between;
-    align-items:center;
+    align-items:flex-start;
     padding:12px;
     border:1px solid #eee;
     border-radius:8px;
@@ -59,8 +58,19 @@ body{
 }
 
 .assignment-title{
-    cursor:pointer;
     font-weight:600;
+    cursor:pointer;
+}
+
+.assignment-desc{
+    font-size:13px;
+    color:#666;
+    margin-top:3px;
+}
+
+.left-box{
+    display:flex;
+    flex-direction:column;
 }
 
 .file-item{
@@ -89,7 +99,6 @@ body{
 </div>
 
 <div class="box">
-
 <h4>Assignments</h4>
 
 <div class="accordion" id="assignmentAccordion">
@@ -101,17 +110,28 @@ while($a = $assignments->fetch_assoc()){
     $aid = $a['id'];
 ?>
 
-<!-- ASSIGNMENT HEADER -->
+<!-- HEADER -->
 <div class="assignment-header">
 
-    <div class="assignment-title"
-         data-bs-toggle="collapse"
-         data-bs-target="#a<?= $aid; ?>">
-        <?= htmlspecialchars($a['title']); ?>
+    <!-- LEFT (CLICK ONLY TITLE) -->
+    <div class="left-box">
+
+        <div class="assignment-title"
+             data-bs-toggle="collapse"
+             data-bs-target="#a<?= $aid; ?>">
+            <?= htmlspecialchars($a['title']); ?>
+        </div>
+
+        <div class="assignment-desc">
+            <?= htmlspecialchars($a['description'] ?? 'No description'); ?>
+        </div>
+
     </div>
 
+    <!-- DELETE BUTTON -->
     <?php if($role == 'admin'){ ?>
-    <button class="btn-del"
+    <button type="button"
+            class="btn-del"
             data-bs-toggle="modal"
             data-bs-target="#delA<?= $aid; ?>">
         Delete
@@ -143,7 +163,6 @@ while($a = $assignments->fetch_assoc()){
     ?>
 
         <div class="file-item">
-
             <div>
                 👤 <b><?= htmlspecialchars($row['name']); ?></b><br>
                 📄 <?= htmlspecialchars($row['file']); ?>
@@ -154,66 +173,45 @@ while($a = $assignments->fetch_assoc()){
                     data-bs-target="#delS<?= $sid; ?>">
                 Delete
             </button>
-
         </div>
 
-        <!-- SUBMISSION MODAL -->
-        <div class="modal fade" id="delS<?= $sid; ?>">
-          <div class="modal-dialog modal-dialog-centered">
-            <div class="modal-content">
+    <?php } ?>
 
-              <div class="modal-header">
-                <h5>Delete Submission</h5>
-                <button class="btn-close" data-bs-dismiss="modal"></button>
-              </div>
-
-              <div class="modal-body">
-                Are you sure want to delete this submission?
-              </div>
-
-              <div class="modal-footer">
-                <button class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
-                <a class="btn btn-danger"
-                   href="delete_submission.php?id=<?= $sid; ?>">
-                   Delete
-                </a>
-              </div>
-
-            </div>
-          </div>
-        </div>
-
-    <?php
-        }
-
-    } else {
-        echo "<p class='text-muted'>No submission yet</p>";
-    }
-    ?>
+    <?php } else { ?>
+        <p class="text-muted">No submission yet</p>
+    <?php } ?>
 
     </div>
 </div>
 
-<!-- ASSIGNMENT MODAL -->
+<!-- DELETE ASSIGNMENT MODAL (POST FIX) -->
 <div class="modal fade" id="delA<?= $aid; ?>">
   <div class="modal-dialog modal-dialog-centered">
     <div class="modal-content">
 
       <div class="modal-header">
         <h5>Delete Assignment</h5>
-        <button class="btn-close" data-bs-dismiss="modal"></button>
+        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
       </div>
 
       <div class="modal-body">
-        Are you sure want to delete this assignment and all submissions?
+        Are you sure you want to delete this assignment?
+        <br><small class="text-muted">All submissions will also be deleted.</small>
       </div>
 
       <div class="modal-footer">
-        <button class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
-        <a class="btn btn-danger"
-           href="delete_assignment.php?id=<?= $aid; ?>">
-           Delete
-        </a>
+
+        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
+            Cancel
+        </button>
+
+        <form method="POST" action="delete_assignment.php">
+            <input type="hidden" name="id" value="<?= $aid; ?>">
+            <button type="submit" class="btn btn-danger">
+                Delete
+            </button>
+        </form>
+
       </div>
 
     </div>
