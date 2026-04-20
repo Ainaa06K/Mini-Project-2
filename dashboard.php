@@ -3,7 +3,6 @@ include 'config.php';
 include 'header.php';
 
 
-
 if(!isset($_SESSION['user_id'])){
     header("Location: login.php");
     exit();
@@ -14,13 +13,16 @@ $role = $_SESSION['role'];
 $name = $_SESSION['name'] ?? 'User';
 ?>
 
+<!-- BOOTSTRAP -->
+<link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+
 <style>
 body{
     background:#f4f6f9;
     font-family: Arial;
 }
 
-/* WELCOME */
 .welcome{
     background:#2c3e50;
     color:white;
@@ -45,35 +47,30 @@ body{
     margin-top:20px;
 }
 
-/* FILE */
-.file-item{
-    padding:10px 0;
-    border-bottom:1px solid #eee;
+.assignment-header{
     display:flex;
     justify-content:space-between;
     align-items:center;
+    padding:12px;
+    border:1px solid #eee;
+    border-radius:8px;
+    margin-bottom:5px;
+    background:#fff;
 }
 
-.file-left{
-    font-size:14px;
+.assignment-title{
+    cursor:pointer;
+    font-weight:600;
 }
 
-.file-name{
-    color:#333;
-    font-weight:500;
+.file-item{
+    display:flex;
+    justify-content:space-between;
+    padding:10px 0;
+    border-bottom:1px solid #eee;
 }
 
-/* BUTTONS */
-.download-btn{
-    background:#1e639b;
-    color:white;
-    padding:5px 10px;
-    border-radius:6px;
-    text-decoration:none;
-    font-size:13px;
-}
-
-.delete-btn{
+.btn-del{
     background:#e74c3c;
     color:white;
     padding:5px 10px;
@@ -85,178 +82,147 @@ body{
 
 <div class="container mt-3">
 
-    <!-- WELCOME -->
-    <div class="welcome">
-        <h3>Welcome <?php echo htmlspecialchars($name); ?></h3>
+<!-- WELCOME -->
+<div class="welcome">
+    <h3>Welcome <?= htmlspecialchars($name); ?></h3>
+    <div class="role-box">Role: <?= ucfirst($role); ?></div>
+</div>
 
-        <div class="role-box">
-            Role: <?php echo ucfirst($role); ?>
-        </div>
+<div class="box">
+
+<h4>Assignments</h4>
+
+<div class="accordion" id="assignmentAccordion">
+
+<?php
+$assignments = $conn->query("SELECT * FROM assignments ORDER BY id DESC");
+
+while($a = $assignments->fetch_assoc()){
+    $aid = $a['id'];
+?>
+
+<!-- ASSIGNMENT HEADER -->
+<div class="assignment-header">
+
+    <div class="assignment-title"
+         data-bs-toggle="collapse"
+         data-bs-target="#a<?= $aid; ?>">
+        <?= htmlspecialchars($a['title']); ?>
     </div>
 
-    <!-- CONTENT -->
-    <div class="box">
+    <?php if($role == 'admin'){ ?>
+    <button class="btn-del"
+            data-bs-toggle="modal"
+            data-bs-target="#delA<?= $aid; ?>">
+        Delete
+    </button>
+    <?php } ?>
 
-        <h4>
-            <?php echo ($role == 'admin') ? 'All Submissions' : 'My Submissions'; ?>
-        </h4>
+</div>
 
-        <div class="accordion" id="submissionAccordion">
+<!-- COLLAPSE -->
+<div id="a<?= $aid; ?>" class="collapse" data-bs-parent="#assignmentAccordion">
 
-        <?php
-        $assignments = $conn->query("SELECT * FROM assignments ORDER BY id DESC");
+    <div class="p-3 border">
 
-        while($a = $assignments->fetch_assoc()){
+    <?php
+    $stmt = $conn->prepare("
+        SELECT submissions.id, submissions.file, users.name
+        FROM submissions
+        JOIN users ON submissions.user_id = users.id
+        WHERE submissions.assignment_id=?
+    ");
+    $stmt->bind_param("i", $aid);
+    $stmt->execute();
+    $result = $stmt->get_result();
 
-            $assignment_id = $a['id'];
-        ?>
+    if($result->num_rows > 0){
 
-            <div class="accordion-item">
+        while($row = $result->fetch_assoc()){
+            $sid = $row['id'];
+    ?>
 
-                <!-- HEADER -->
-                <div class="d-flex justify-content-between align-items-center w-100">
+        <div class="file-item">
 
-                    <button class="accordion-button collapsed flex-grow-1"
-                        data-bs-toggle="collapse"
-                        data-bs-target="#a<?= $assignment_id; ?>">
-
-                        <?= htmlspecialchars($a['title']); ?>
-
-                    </button>
-
-                    <!-- ADMIN DELETE ASSIGNMENT -->
-                    <?php if($role == 'admin'){ ?>
-                        <form method="POST" action="delete_submission.php">
-                            <input type="hidden" name="file" value="<?= $file; ?>">
-                            <button class="delete-btn">Delete</button>
-                        </form>
-                           onclick="return confirm('Delete this assignment? All submissions will also be deleted!')"
-                           style="
-                                margin-left:10px;
-                                background:#e74c3c;
-                                color:white;
-                                padding:6px 10px;
-                                border-radius:6px;
-                                text-decoration:none;
-                                font-size:12px;">
-                            Delete
-                        </a>
-                    <?php } ?>
-
-                </div>
-
-                <!-- BODY -->
-                <div id="a<?= $assignment_id; ?>" class="accordion-collapse collapse"
-                    data-bs-parent="#submissionAccordion">
-
-                    <div class="accordion-body">
-
-                        <?php
-
-                        if($role == 'admin'){
-                           $stmt = $conn->prepare("
-                                SELECT users.name, submissions.file 
-                                FROM submissions 
-                                JOIN users ON submissions.user_id = users.id 
-                                WHERE submissions.assignment_id = ?
-                            ");
-                            $stmt->bind_param("i", $assignment_id);
-                            $stmt->execute();
-                            $result = $stmt->get_result();
-                        } else {
-                           $stmt = $conn->prepare("SELECT file FROM submissions WHERE assignment_id=? AND user_id=?");
-                           $stmt->bind_param("ii", $assignment_id, $user_id);
-                           $stmt->execute();
-                           $result = $stmt->get_result();
-                        }
-
-                        $result = $conn->query($sql);
-
-                        if($result && $result->num_rows > 0){
-
-                            while($row = $result->fetch_assoc()){
-
-                                $file = $row['file'];
-                        ?>
-
-                        <div class="file-item">
-
-                            <div class="file-left">
-
-                                <?php if($role == 'admin'){ ?>
-                                    👤 <b><?= $row['name']; ?></b><br>
-                                <?php } ?>
-
-                                📄 <span class="file-name"><?= htmlspecialchars($file); ?></span>
-
-                            </div>
-
-                            <div class="d-flex gap-2">
-
-                                <a class="download-btn" href="uploads/<?= $file; ?>">
-                                    Download
-                                </a>
-
-                                <button class="delete-btn"
-                                    data-bs-toggle="modal"
-                                    data-bs-target="#del<?= md5($file); ?>">
-                                    Delete
-                                </button>
-
-                            </div>
-
-                        </div>
-
-                        <!-- DELETE SUBMISSION MODAL -->
-                        <div class="modal fade" id="del<?= md5($file); ?>" tabindex="-1">
-                          <div class="modal-dialog modal-dialog-centered">
-                            <div class="modal-content">
-
-                              <div class="modal-header">
-                                <h5 class="modal-title">Confirm Delete</h5>
-                                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
-                              </div>
-
-                              <div class="modal-body">
-                                Are you sure want to delete this file?
-                                <br><b><?= htmlspecialchars($file); ?></b>
-                              </div>
-
-                              <div class="modal-footer">
-                                <button class="btn btn-secondary" data-bs-dismiss="modal">
-                                    Cancel
-                                </button>
-
-                                <a href="delete.php?file=<?= $file; ?>"
-                                   class="btn btn-danger">
-                                   Yes Delete
-                                </a>
-                              </div>
-
-                            </div>
-                          </div>
-                        </div>
-
-                        <?php
-                            }
-
-                        } else {
-                            echo "No submission yet";
-                        }
-                        ?>
-
-                    </div>
-
-                </div>
-
+            <div>
+                👤 <b><?= htmlspecialchars($row['name']); ?></b><br>
+                📄 <?= htmlspecialchars($row['file']); ?>
             </div>
 
-        <?php } ?>
+            <button class="btn btn-danger btn-sm"
+                    data-bs-toggle="modal"
+                    data-bs-target="#delS<?= $sid; ?>">
+                Delete
+            </button>
 
         </div>
 
-    </div>
+        <!-- SUBMISSION MODAL -->
+        <div class="modal fade" id="delS<?= $sid; ?>">
+          <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content">
 
+              <div class="modal-header">
+                <h5>Delete Submission</h5>
+                <button class="btn-close" data-bs-dismiss="modal"></button>
+              </div>
+
+              <div class="modal-body">
+                Are you sure want to delete this submission?
+              </div>
+
+              <div class="modal-footer">
+                <button class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                <a class="btn btn-danger"
+                   href="delete_submission.php?id=<?= $sid; ?>">
+                   Delete
+                </a>
+              </div>
+
+            </div>
+          </div>
+        </div>
+
+    <?php
+        }
+
+    } else {
+        echo "<p class='text-muted'>No submission yet</p>";
+    }
+    ?>
+
+    </div>
+</div>
+
+<!-- ASSIGNMENT MODAL -->
+<div class="modal fade" id="delA<?= $aid; ?>">
+  <div class="modal-dialog modal-dialog-centered">
+    <div class="modal-content">
+
+      <div class="modal-header">
+        <h5>Delete Assignment</h5>
+        <button class="btn-close" data-bs-dismiss="modal"></button>
+      </div>
+
+      <div class="modal-body">
+        Are you sure want to delete this assignment and all submissions?
+      </div>
+
+      <div class="modal-footer">
+        <button class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+        <a class="btn btn-danger"
+           href="delete_assignment.php?id=<?= $aid; ?>">
+           Delete
+        </a>
+      </div>
+
+    </div>
+  </div>
+</div>
+
+<?php } ?>
+
+</div>
 </div>
 
 <?php include 'footer.php'; ?>
