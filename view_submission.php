@@ -1,6 +1,6 @@
 <?php
 include 'header.php';
-include 'config.php';
+include 'db.php';
 
 $user_id = $_SESSION['user_id'];
 $role = $_SESSION['role'];
