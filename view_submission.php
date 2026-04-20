@@ -1,131 +1,100 @@
 <?php
 include 'header.php';
-include 'config.php';
+include 'db.php';
 
-$user_id = $_SESSION['user_id'];
-$role = $_SESSION['role'];
-?>
+$user_id = $_SESSION['user']['id'];
+$role = $_SESSION['user']['role'];
 
-<style>
-body{
-    background:#f4f6f9;
-    font-family: Arial;
-}
+// ajax
+if (isset($_GET['ajax'])) {
 
-.container-box{
-    max-width:900px;
-    margin:30px auto;
-}
+    // admin search
+    if ($role == 'admin') {
+        $q = $_GET['q'] ?? '';
+        $search = "%" . $q . "%";
 
-.title-box{
-    background:#1f2a44;
-    color:white;
-    padding:15px 20px;
-    border-radius:10px;
-    margin-bottom:20px;
-}
-
-.card-sub{
-    background:white;
-    padding:15px;
-    border-radius:10px;
-    margin-bottom:15px;
-    box-shadow:0 2px 8px rgba(0,0,0,0.08);
-    transition:0.3s;
-}
-
-.card-sub:hover{
-    transform:scale(1.01);
-}
-
-.badge{
-    display:inline-block;
-    padding:4px 10px;
-    border-radius:20px;
-    background:#e3e3e3;
-    font-size:12px;
-    margin-bottom:5px;
-}
-
-.btn-download{
-    display:inline-block;
-    margin-top:10px;
-    padding:8px 12px;
-    background:#4caf50;
-    color:white;
-    text-decoration:none;
-    border-radius:6px;
-}
-
-.btn-download:hover{
-    background:#388e3c;
-    color:white;
-}
-</style>
-
-<div class="container-box">
-
-<?php if($role == 'admin'){ ?>
-
-    <div class="title-box">
-        <h3>All Submissions</h3>
-    </div>
-
-    <?php
-    $sql = "SELECT users.name, assignments.title, submissions.file
+        $stmt = $conn->prepare("
+            SELECT users.name, assignments.title, submissions.file_path
             FROM submissions
             JOIN users ON submissions.user_id = users.id
-            JOIN assignments ON submissions.assignment_id = assignments.id";
+            JOIN assignments ON submissions.assignment_id = assignments.id
+            WHERE users.name LIKE ?
+        ");
+        $stmt->bind_param("s", $search);
+    }
 
-    $result = $conn->query($sql);
+    // student view
+    else {
+        $stmt = $conn->prepare("
+            SELECT assignments.title, submissions.file_path
+            FROM submissions
+            JOIN assignments ON submissions.assignment_id = assignments.id
+            WHERE submissions.user_id = ?
+        ");
+        $stmt->bind_param("i", $user_id);
+    }
 
-    while($row = $result->fetch_assoc()){
-    ?>
-
-        <div class="card-sub">
-            <div class="badge">Student</div>
-            <h4><?= $row['name']; ?></h4>
-
-            <div class="badge">Assignment</div>
-            <p><?= $row['title']; ?></p>
-
-            <a class="btn-download" href="uploads/<?= $row['file']; ?>" download>
-                Download
-            </a>
-        </div>
-
-    <?php } ?>
-
-<?php } else { ?>
-
-    <div class="title-box">
-        <h3>My Submissions</h3>
-    </div>
-
-    <?php
-    $stmt = $conn->prepare("SELECT assignments.title, submissions.file
-                            FROM submissions
-                            JOIN assignments ON submissions.assignment_id = assignments.id
-                            WHERE submissions.user_id = ?");
-
-    $stmt->bind_param("i", $user_id);
     $stmt->execute();
     $result = $stmt->get_result();
 
-    while($row = $result->fetch_assoc()){
-    ?>
+    if ($result->num_rows > 0) {
+        while ($row = $result->fetch_assoc()) {
 
-        <div class="card-sub">
-            <div class="badge">Assignment</div>
-            <p><?= $row['title']; ?></p>
+            echo "<div style='border:1px solid #ccc; padding:10px; margin:5px;'>";
 
-            <a class="btn-download" href="uploads/<?= $row['file']; ?>" download>
-                Download
-            </a>
-        </div>
+            if ($role == 'admin') {
+                echo "<strong>Student:</strong> {$row['name']}<br>";
+            }
 
-    <?php } ?>
+            echo "<strong>Assignment:</strong> {$row['title']}<br>";
+            echo "<a href='{$row['file_path']}' download>Download</a>";
 
-<?php } ?>
+            echo "</div>";
+        }
+    } else {
+        echo "No results found";
+    }
 
-</div>
+    exit(); 
+}
+?>
+
+<!-- normal page ui  -->
+
+<h2>View Submissions</h2>
+
+<?php if ($role == 'admin'): ?>
+    <input type="text" id="search" placeholder="Search student name..." style="padding:8px; width:300px;">
+<?php endif; ?>
+
+<div id="result"></div>
+
+<script>
+function loadData(keyword = "") {
+    fetch("view_submission.php?ajax=1&q=" + keyword)
+    .then(res => res.text())
+    .then(data => {
+        document.getElementById("result").innerHTML = data;
+    });
+}
+
+// Load all data at start
+window.onload = function() {
+    loadData();
+};
+
+// Live search (admin only)
+let timeout;
+let searchInput = document.getElementById("search");
+
+if (searchInput) {
+    searchInput.addEventListener("keyup", function() {
+        clearTimeout(timeout);
+        let keyword = this.value;
+
+        timeout = setTimeout(() => {
+            loadData(keyword);
+        }, 300);
+    });
+}
+</script>
