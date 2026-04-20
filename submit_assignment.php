@@ -45,6 +45,15 @@ if(isset($_POST['submit'])){
         $newFile = time()."_".$file;
 
         move_uploaded_file($tmp, "uploads/".$newFile);
+        // Check for duplicate submission
+        $check = $conn->prepare("SELECT id FROM submissions WHERE user_id=? AND assignment_id=?");
+        $check->bind_param("ii", $_SESSION['user_id'], $assignment_id);
+        $check->execute();
+        $check->store_result();
+
+if($check->num_rows > 0){
+    $msg = "<div class='alert alert-danger'>You already submitted this assignment</div>";
+}
 
         /* INSERT WITH assignment_id */
         $stmt = $conn->prepare("INSERT INTO submissions (user_id, assignment_id, file) VALUES (?,?,?)");
