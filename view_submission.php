@@ -47,6 +47,12 @@ body{
     margin-bottom:5px;
 }
 
+.file-box{
+    font-weight:600;
+    color:#333;
+    margin:5px 0;
+}
+
 .btn-download{
     display:inline-block;
     margin-top:10px;
@@ -83,15 +89,25 @@ body{
     ?>
 
         <div class="card-sub">
+
             <div class="badge">Student</div>
-            <h4><?= $row['name']; ?></h4>
+            <h4><?= htmlspecialchars($row['name']); ?></h4>
 
             <div class="badge">Assignment</div>
-            <p><?= $row['title']; ?></p>
+            <p><?= htmlspecialchars($row['title']); ?></p>
 
-            <a class="btn-download" href="uploads/<?= $row['file']; ?>" download>
+            <!-- FILE NAME (NEW ADD) -->
+            <div class="badge">File</div>
+            <div class="file-box">
+                <?= htmlspecialchars($row['file']); ?>
+            </div>
+
+            <a class="btn-download"
+               href="uploads/<?= urlencode($row['file']); ?>"
+               download>
                 Download
             </a>
+
         </div>
 
     <?php } ?>
@@ -103,10 +119,12 @@ body{
     </div>
 
     <?php
-    $stmt = $conn->prepare("SELECT assignments.title, submissions.file
-                            FROM submissions
-                            JOIN assignments ON submissions.assignment_id = assignments.id
-                            WHERE submissions.user_id = ?");
+    $stmt = $conn->prepare("
+        SELECT assignments.title, submissions.file
+        FROM submissions
+        JOIN assignments ON submissions.assignment_id = assignments.id
+        WHERE submissions.user_id = ?
+    ");
 
     $stmt->bind_param("i", $user_id);
     $stmt->execute();
@@ -116,12 +134,22 @@ body{
     ?>
 
         <div class="card-sub">
-            <div class="badge">Assignment</div>
-            <p><?= $row['title']; ?></p>
 
-            <a class="btn-download" href="uploads/<?= $row['file']; ?>" download>
+            <div class="badge">Assignment</div>
+            <p><?= htmlspecialchars($row['title']); ?></p>
+
+            <!-- FILE NAME (NEW ADD) -->
+            <div class="badge">File</div>
+            <div class="file-box">
+                <?= htmlspecialchars($row['file']); ?>
+            </div>
+
+            <a class="btn-download"
+               href="uploads/<?= urlencode($row['file']); ?>"
+               download>
                 Download
             </a>
+
         </div>
 
     <?php } ?>
