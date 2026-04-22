@@ -53,8 +53,18 @@ if(isset($_POST['login'])){
 <div class="container mt-5">
 <div class="row shadow rounded overflow-hidden">
 
-<div class="col-md-6 bg-primary text-white d-flex justify-content-center align-items-center">
-<h2>Assignment System</h2>
+<div class="col-md-6 d-flex justify-content-center align-items-center text-white"
+     style="background: linear-gradient(135deg, #2c3e50, #3498db);">
+    
+    <div class="text-center">
+        <h2 style="font-weight:700; letter-spacing:1px;">
+            Assignment Submission System
+        </h2>
+        <p style="font-size:13px; opacity:0.8;">
+            For students to submit assignments and for teachers to manage them.
+        </p>
+    </div>
+
 </div>
 
 <div class="col-md-6 p-5">
