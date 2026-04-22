@@ -99,7 +99,7 @@ body { background:#f4f6f9; font-family: Arial, sans-serif; margin: 0; }
 }
 
 .title-box {
-    background:#1f2a44;
+    background: linear-gradient(135deg, #2c3e50, #3498db);
     color:white;
     padding:15px;
     border-radius:10px;
