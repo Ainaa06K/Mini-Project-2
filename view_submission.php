@@ -1,10 +1,6 @@
 <?php
-/* ============================================================
-   1. INITIALIZATION & SESSION
-   ============================================================ */
-include 'config.php'; 
+include 'db.php'; 
 
-// Ensure session is active before checking login status
 if (session_status() === PHP_SESSION_NONE) {
     session_start();
 }
@@ -12,24 +8,19 @@ if (session_status() === PHP_SESSION_NONE) {
 $user_id = $_SESSION['user_id'] ?? null;
 $role = $_SESSION['role'] ?? null;
 
-/* ============================================================
-   2. SECURITY CHECK
-   ============================================================ */
 if (!$user_id) {
     header("Location: login.php");
     exit();
 }
 
-/* ============================================================
-   3. AJAX SEARCH LOGIC (The "Stop" Gate)
-   ============================================================ */
+// Ajax search
 if (isset($_GET['ajax'])) {
 
     $q = $_GET['q'] ?? '';
     $search = "%$q%";
 
-    /* ADMIN VIEW - Search by student name */
     if ($role == 'admin') {
+
         $stmt = $conn->prepare("
             SELECT users.name, assignments.title, submissions.file
             FROM submissions
@@ -38,9 +29,9 @@ if (isset($_GET['ajax'])) {
             WHERE users.name LIKE ?
         ");
         $stmt->bind_param("s", $search);
-    } 
-    /* STUDENT VIEW - Only see own submissions */
-    else {
+
+    } else {
+
         $stmt = $conn->prepare("
             SELECT assignments.title, submissions.file
             FROM submissions
@@ -54,9 +45,11 @@ if (isset($_GET['ajax'])) {
     $result = $stmt->get_result();
 
     if ($result->num_rows > 0) {
+
         while ($row = $result->fetch_assoc()) {
+
             echo "<div class='card-sub'>";
-            
+
             if ($role == 'admin') {
                 echo "<div class='badge'>Student</div>";
                 echo "<h4>" . htmlspecialchars($row['name']) . "</h4>";
@@ -66,40 +59,118 @@ if (isset($_GET['ajax'])) {
             echo "<p>" . htmlspecialchars($row['title']) . "</p>";
 
             $fileName = basename($row['file']);
+
             echo "<div style='margin-top:5px; font-size:13px; color:#555;'>
                     📄 File: <b>" . htmlspecialchars($fileName) . "</b>
                   </div>";
 
-            echo "<a class='btn-download' href='uploads/{$row['file']}' download>Download</a>";
+            // View and download
+
+            echo "<div style='margin-top:10px;'>";
+
+            // 🔥 VIEW = OPEN FILE DIRECT (NEW TAB FULL PAGE)
+            echo "<a class='btn-view' href='uploads/" . urlencode($row['file']) . "' target='_blank'>View</a>";
+
+            // DOWNLOAD
+            echo "<a class='btn-download' href='uploads/" . urlencode($row['file']) . "' download>Download</a>";
+
+            echo "</div>";
+
             echo "</div>";
         }
+
     } else {
         echo "<p style='padding:20px;'>No results found.</p>";
     }
 
-    // CRITICAL: Stop the script here so header.php doesn't load into the AJAX result!
     exit();
 }
 
-/* ============================================================
-   4. NORMAL PAGE LOAD (Include the visual header here)
-   ============================================================ */
 include 'header.php'; 
 ?>
 
 <style>
-    body { background:#f4f6f9; font-family: Arial, sans-serif; margin: 0; }
-    .container-box { max-width:900px; margin:30px auto; padding: 0 15px; }
-    .title-box { background:#1f2a44; color:white; padding:15px; border-radius:10px; margin-bottom:20px; }
-    .card-sub { background:white; padding:15px; margin-bottom:15px; border-radius:10px; box-shadow:0 2px 8px rgba(0,0,0,0.08); transition: 0.2s; }
-    .card-sub:hover { transform:scale(1.01); }
-    .badge { display:inline-block; padding:4px 10px; border-radius:20px; background:#ddd; font-size:12px; margin-bottom:5px; color: #333; }
-    .btn-download { display:inline-block; margin-top:10px; padding:8px 12px; background:#4caf50; color:white; text-decoration:none; border-radius:6px; font-size: 14px; }
-    .btn-download:hover { background: #45a049; }
-    #search { padding:10px; width:100%; max-width:300px; margin-bottom:20px; border: 1px solid #ccc; border-radius: 5px; }
+body { background:#f4f6f9; font-family: Arial, sans-serif; margin: 0; }
+
+.container-box {
+    max-width:900px;
+    margin:30px auto;
+    padding: 0 15px;
+}
+
+.title-box {
+    background:#1f2a44;
+    color:white;
+    padding:15px;
+    border-radius:10px;
+    margin-bottom:20px;
+}
+
+.card-sub {
+    background:white;
+    padding:15px;
+    margin-bottom:15px;
+    border-radius:10px;
+    box-shadow:0 2px 8px rgba(0,0,0,0.08);
+    transition:0.2s;
+}
+
+.card-sub:hover {
+    transform:scale(1.01);
+}
+
+.badge {
+    display:inline-block;
+    padding:4px 10px;
+    border-radius:20px;
+    background:#ddd;
+    font-size:12px;
+    margin-bottom:5px;
+}
+
+.btn-download {
+    display:inline-block;
+    margin-top:10px;
+    padding:8px 12px;
+    background:#4caf50;
+    color:white;
+    text-decoration:none;
+    border-radius:6px;
+    font-size:14px;
+}
+
+.btn-download:hover {
+    background:#45a049;
+}
+
+.btn-view {
+    display:inline-block;
+    margin-top:10px;
+    margin-right:8px;
+    padding:8px 12px;
+    background:#3498db;
+    color:white;
+    text-decoration:none;
+    border-radius:6px;
+    font-size:14px;
+}
+
+.btn-view:hover {
+    background:#2980b9;
+}
+
+#search {
+    padding:10px;
+    width:100%;
+    max-width:300px;
+    margin-bottom:20px;
+    border:1px solid #ccc;
+    border-radius:5px;
+}
 </style>
 
 <div class="container-box">
+
     <div class="title-box">
         <h3><?= ($role == 'admin') ? 'All Submissions' : 'My Submissions' ?></h3>
     </div>
@@ -111,12 +182,12 @@ include 'header.php';
     <div id="result">
         <p>Loading submissions...</p>
     </div>
+
 </div>
 
 <script>
 function loadData(keyword = "") {
     var xhr = new XMLHttpRequest();
-    // Ensure the filename here matches this file's name
     xhr.open("GET", "view_submission.php?ajax=1&q=" + encodeURIComponent(keyword), true);
 
     xhr.onreadystatechange = function () {
@@ -127,12 +198,10 @@ function loadData(keyword = "") {
     xhr.send();
 }
 
-// Load data immediately on page load
 window.onload = function () {
     loadData();
 };
 
-// Listen for typing in search box
 let searchInput = document.getElementById("search");
 if (searchInput) {
     let timeout;
@@ -140,7 +209,8 @@ if (searchInput) {
         clearTimeout(timeout);
         timeout = setTimeout(() => {
             loadData(this.value);
-        }, 300); // 300ms delay to prevent server spam
+        }, 300);
     });
 }
 </script>
+<?php include 'footer.php'; ?>
