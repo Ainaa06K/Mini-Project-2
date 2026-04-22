@@ -1,5 +1,5 @@
 <?php
-include 'config.php';
+include 'db.php';
 
 // Smart session start to avoid "already active" notice
 if (session_status() === PHP_SESSION_NONE) {
