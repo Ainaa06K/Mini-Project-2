@@ -19,7 +19,7 @@ if (isset($_POST['create_task'])) {
         $msg = "<div class='alert alert-danger'>Please fill in all fields!</div>";
     } else {
 
-        // INSERT TITLE + DESCRIPTION ONLY
+        // Insert title and description
         $stmt = $conn->prepare("INSERT INTO assignments (title, description) VALUES (?, ?)");
         $stmt->bind_param("ss", $title, $description);
 
