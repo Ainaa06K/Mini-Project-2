@@ -10,41 +10,41 @@ if(!isset($_SESSION['user_id'])){
 $user_id = $_SESSION['user_id'];
 $role = $_SESSION['role'];
 
-$file = $_GET['file'] ?? '';
+$submission_id = $_POST['submission_id'] ?? 0;
 
-if(empty($file)){
+if($submission_id <= 0){
     header("Location: dashboard.php");
     exit();
 }
 
-/* =========================
-   ADMIN CAN DELETE ANY FILE
-   STUDENT ONLY OWN FILE
-========================= */
+/* GET FILE NAME FIRST */
+$stmt = $conn->prepare("SELECT file, user_id FROM submissions WHERE id=?");
+$stmt->bind_param("i", $submission_id);
+$stmt->execute();
+$result = $stmt->get_result()->fetch_assoc();
 
-if($role == 'admin'){
-
-    $stmt = $conn->prepare("DELETE FROM submissions WHERE file = ?");
-    $stmt->bind_param("s", $file);
-
-} else {
-
-    $stmt = $conn->prepare("DELETE FROM submissions WHERE file = ? AND user_id = ?");
-    $stmt->bind_param("si", $file, $user_id);
-
+if(!$result){
+    exit("Not found");
 }
 
+$file = $result['file'];
+
+/* SECURITY CHECK */
+if($role != 'admin' && $result['user_id'] != $user_id){
+    exit("Unauthorized");
+}
+
+/* DELETE DB */
+$stmt = $conn->prepare("DELETE FROM submissions WHERE id=?");
+$stmt->bind_param("i", $submission_id);
 $stmt->execute();
-$stmt->close();
 
-/* DELETE FILE FROM FOLDER */
+/* DELETE FILE */
 $filePath = "uploads/" . $file;
-
 if(file_exists($filePath)){
     unlink($filePath);
 }
 
-/* BACK TO DASHBOARD */
 header("Location: dashboard.php?deleted=1");
 exit();
 ?>
