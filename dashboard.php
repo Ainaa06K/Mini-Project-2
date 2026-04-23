@@ -1,50 +1,82 @@
 <?php
 include 'db.php';
 
+// start session
 if (session_status() === PHP_SESSION_NONE) {
     session_start();
 }
 
+// check login
 if(!isset($_SESSION['user_id'])){
     header("Location: login.php");
     exit();
 }
 
+// take user data from session
 $user_id = $_SESSION['user_id'];
 $role = $_SESSION['role'];
 $name = $_SESSION['name'] ?? 'User';
 
 
-/* =========================
-   DELETE SUBMISSION
-========================= */
+// delete submission
 if(isset($_POST['delete_submission_id'])){
 
     $sid = $_POST['delete_submission_id'];
 
-    if($role == 'admin'){
+    // take file + owner
+    $stmt = $conn->prepare("SELECT file, user_id FROM submissions WHERE id=?");
+    $stmt->bind_param("i", $sid);
+    $stmt->execute();
+    $res = $stmt->get_result()->fetch_assoc();
+
+    if($res){
+
+        // if not admin can delete own submission
+        if($role != 'admin' && $res['user_id'] != $user_id){
+            exit("Unauthorized");
+        }
+
+        $file = $res['file'];
+
+        // delete in the database
         $stmt = $conn->prepare("DELETE FROM submissions WHERE id=?");
         $stmt->bind_param("i", $sid);
-    } else {
-        $stmt = $conn->prepare("DELETE FROM submissions WHERE id=? AND user_id=?");
-        $stmt->bind_param("ii", $sid, $user_id);
-    }
+        $stmt->execute();
 
-    $stmt->execute();
+        // delete file in folder
+        $path = "uploads/" . $file;
+        if(!empty($file) && file_exists($path)){
+            unlink($path);
+        }
+    }
 }
 
 
-/* =========================
-   ADD THIS 👉 DELETE ASSIGNMENT
-========================= */
+// delete assignment (admin only)
 if(isset($_POST['delete_assignment_id'])){
 
     $aid = $_POST['delete_assignment_id'];
 
     if($role == 'admin'){
 
-        // delete submissions first
-        $conn->query("DELETE FROM submissions WHERE assignment_id=$aid");
+        // take all submission file first
+        $stmt = $conn->prepare("SELECT file FROM submissions WHERE assignment_id=?");
+        $stmt->bind_param("i", $aid);
+        $stmt->execute();
+        $result = $stmt->get_result();
+
+        // delete all file
+        while($row = $result->fetch_assoc()){
+            $path = "uploads/" . $row['file'];
+            if(!empty($row['file']) && file_exists($path)){
+                unlink($path);
+            }
+        }
+
+        // delete all submission
+        $stmt = $conn->prepare("DELETE FROM submissions WHERE assignment_id=?");
+        $stmt->bind_param("i", $aid);
+        $stmt->execute();
 
         // delete assignment
         $stmt = $conn->prepare("DELETE FROM assignments WHERE id=?");
@@ -54,9 +86,7 @@ if(isset($_POST['delete_assignment_id'])){
 }
 
 
-/* =========================
-   AJAX SEARCH
-========================= */
+// ajax search assignment
 if(isset($_GET['ajax'])){
 
     $q = "%" . ($_GET['q'] ?? '') . "%";
@@ -84,7 +114,6 @@ if(isset($_GET['ajax'])){
         </div>
     </div>
 
-    <!-- ADD DELETE ASSIGNMENT BUTTON -->
     <?php if($role == 'admin'){ ?>
     <button class="btn btn-danger btn-sm"
             onclick="openPopupAssign(<?= $aid ?>)">
@@ -161,22 +190,13 @@ if(isset($_GET['ajax'])){
 <?php include 'header.php'; ?>
 
 <style>
-body{
-    background:#f4f6f9;
-    font-family:Arial;
-}
+body{ background:#f4f6f9; font-family:Arial; }
 
-.box{
-    max-width:900px;
-    margin:auto;
-    padding:20px;
-}
+.box{ max-width:900px; margin:auto; padding:20px; }
 
 .welcome{
     background: linear-gradient(135deg, #2c3e50, #3498db);
-    color:white;
-    padding:20px;
-    border-radius:10px;
+    color:white; padding:20px; border-radius:10px;
 }
 
 .role-box{
@@ -189,58 +209,31 @@ body{
 }
 
 .assignment-header{
-    display:flex;
-    justify-content:space-between;
-    padding:12px;
-    border:1px solid #eee;
-    border-radius:8px;
-    margin-top:10px;
-    background:#fff;
+    display:flex; justify-content:space-between;
+    padding:12px; border:1px solid #eee;
+    border-radius:8px; margin-top:10px; background:#fff;
 }
 
-.assignment-title{
-    font-weight:600;
-    cursor:pointer;
-}
+.assignment-title{ font-weight:600; cursor:pointer; }
 
-.assignment-desc{
-    font-size:13px;
-    color:#666;
-}
+.assignment-desc{ font-size:13px; color:#666; }
 
 .file-item{
-    display:flex;
-    justify-content:space-between;
-    padding:10px 0;
-    border-bottom:1px solid #eee;
+    display:flex; justify-content:space-between;
+    padding:10px 0; border-bottom:1px solid #eee;
 }
 
-/* POPUP */
+/* popup */
 .popup{
-    position:fixed;
-    inset:0;
+    position:fixed; inset:0;
     background:rgba(0,0,0,0.55);
-    display:none;
-    justify-content:center;
-    align-items:center;
+    display:none; justify-content:center; align-items:center;
 }
 
 .popup-box{
-    background:#fff;
-    padding:25px;
-    border-radius:14px;
-    width:320px;
-    text-align:center;
+    background:#fff; padding:25px;
+    border-radius:14px; width:320px; text-align:center;
 }
-
-.popup-box button{
-    margin:5px;
-    padding:8px 15px;
-    border:none;
-    border-radius:8px;
-}
-
-/* ASSIGNMENT POPUP */
 </style>
 
 <div class="box">
@@ -258,28 +251,24 @@ body{
 
 </div>
 
-<!-- DELETE SUBMISSION POPUP -->
+<!-- delete submission -->
 <div class="popup" id="popup">
     <div class="popup-box">
         <h4>Delete Submission?</h4>
-
         <form method="POST">
             <input type="hidden" name="delete_submission_id" id="delId">
-
             <button type="submit">Yes</button>
             <button type="button" onclick="closePopup()">No</button>
         </form>
     </div>
 </div>
 
-<!-- DELETE ASSIGNMENT POPUP -->
+<!-- delete assignment -->
 <div class="popup" id="popupAssign">
     <div class="popup-box">
         <h4>Delete Assignment?</h4>
-
         <form method="POST">
             <input type="hidden" name="delete_assignment_id" id="delAssignId">
-
             <button type="submit">Yes</button>
             <button type="button" onclick="closePopupAssign()">No</button>
         </form>
@@ -287,7 +276,6 @@ body{
 </div>
 
 <script>
-
 function load(q=""){
     fetch("dashboard.php?ajax=1&q="+encodeURIComponent(q))
     .then(r=>r.text())
@@ -302,7 +290,6 @@ document.getElementById("search").addEventListener("keyup",function(){
     load(this.value);
 });
 
-/* SUBMISSION POPUP */
 function openPopup(id){
     document.getElementById("delId").value=id;
     document.getElementById("popup").style.display="flex";
@@ -312,7 +299,6 @@ function closePopup(){
     document.getElementById("popup").style.display="none";
 }
 
-/* ASSIGNMENT POPUP */
 function openPopupAssign(id){
     document.getElementById("delAssignId").value=id;
     document.getElementById("popupAssign").style.display="flex";
@@ -321,7 +307,6 @@ function openPopupAssign(id){
 function closePopupAssign(){
     document.getElementById("popupAssign").style.display="none";
 }
-
 </script>
 
 <?php include 'footer.php'; ?>
