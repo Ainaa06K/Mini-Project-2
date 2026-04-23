@@ -2,7 +2,7 @@
 include 'db.php';
 session_start();
 
-/* =========================
+/* =======================
    SECURITY CHECK
 ========================= */
 if(!isset($_SESSION['user_id'])){
