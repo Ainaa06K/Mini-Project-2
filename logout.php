@@ -1,10 +1,10 @@
 <?php
-// Start session to access session data
+// session data
 session_start();
 
-// Destroy all session data (log out user)
+// destroy session data
 session_destroy();
 
-// Redirect user back to login page
+// redirect user 
 header("Location: login.php");
 ?>
