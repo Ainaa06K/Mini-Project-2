@@ -2,9 +2,6 @@
 include 'db.php';
 session_start();
 
-/* =======================
-   SECURITY CHECK
-========================= */
 if(!isset($_SESSION['user_id'])){
     header("Location: login.php");
     exit();
@@ -17,11 +14,7 @@ if($_SESSION['role'] !== 'student'){
 
 $msg = "";
 
-/* GET ASSIGNMENTS*/
 $assignments = $conn->query("SELECT * FROM assignments");
-
-
-//    SUBMIT PROCESS
 
 if(isset($_POST['submit'])){
 
@@ -36,30 +29,28 @@ if(isset($_POST['submit'])){
     $allowed = ['pdf','docx','txt','pptx'];
 
     if(empty($assignment_id)){
-        $msg = "<div class='alert alert-danger'>Please select assignment</div>";
+        $msg = "<div class='alert error'>Please select assignment</div>";
     }
     elseif($error != 0){
-        $msg = "<div class='alert alert-danger'>Please upload file</div>";
+        $msg = "<div class='alert error'>Please upload file</div>";
     }
     elseif(!in_array($ext, $allowed)){
-        $msg = "<div class='alert alert-danger'>Invalid file type</div>";
+        $msg = "<div class='alert error'>Invalid file type</div>";
     }
     elseif($size > 2000000){
-        $msg = "<div class='alert alert-danger'>Max file size 2MB</div>";
+        $msg = "<div class='alert error'>Max file size 2MB</div>";
     }
     else{
 
-        /* DUPLICATE CHECK */
         $check = $conn->prepare("SELECT id FROM submissions WHERE user_id=? AND assignment_id=?");
         $check->bind_param("ii", $_SESSION['user_id'], $assignment_id);
         $check->execute();
         $check->store_result();
 
         if($check->num_rows > 0){
-            $msg = "<div class='alert alert-danger'>You already submitted this assignment</div>";
+            $msg = "<div class='alert error'>Already submitted</div>";
         } else {
 
-            /* CREATE UPLOAD FOLDER */
             if(!is_dir("uploads")){
                 mkdir("uploads", 0777, true);
             }
@@ -73,124 +64,159 @@ if(isset($_POST['submit'])){
                     VALUES (?,?,?)
                 ");
 
-                $stmt->bind_param(
-                    "iis",
-                    $_SESSION['user_id'],
-                    $assignment_id,
-                    $newFile
-                );
+                $stmt->bind_param("iis", $_SESSION['user_id'], $assignment_id, $newFile);
 
                 if($stmt->execute()){
-                    $msg = "<div class='alert alert-success'>Submitted successfully</div>";
+                    $msg = "<div class='alert success'>Submitted successfully</div>";
                 } else {
-                    $msg = "<div class='alert alert-danger'>Database error</div>";
+                    $msg = "<div class='alert error'>Database error</div>";
                 }
 
                 $stmt->close();
 
             } else {
-                $msg = "<div class='alert alert-danger'>Upload failed</div>";
+                $msg = "<div class='alert error'>Upload failed</div>";
             }
         }
 
         $check->close();
     }
 }
-
-/* =========================
-   HEADER
-========================= */
 include 'header.php';
 ?>
 
-<!-- ================= STYLE ================= -->
 <style>
 body{
-    background:#f4f6f9;
-    font-family: Arial;
+    margin:0;
+    font-family:'Segoe UI', Tahoma, sans-serif;
+    background: linear-gradient(135deg, #eef2f7, #dbe7f5);
 }
 
+/* center layout */
+.wrapper{
+    min-height:90vh;
+    display:flex;
+    justify-content:center;
+    align-items:center;
+    padding:20px;
+}
+
+/* card */
 .card{
-    border-radius: 15px;
+    width:420px;
+    background:rgba(255,255,255,0.95);
+    backdrop-filter: blur(10px);
+    border-radius:16px;
+    box-shadow:0 15px 35px rgba(0,0,0,0.1);
+    overflow:hidden;
 }
 
-.form-select, .form-control{
-    border-radius: 10px;
-    padding: 12px;
+/* header */
+.header{
+    background: linear-gradient(135deg, #1e3c72, #2a5298);
+    color:white;
+    padding:18px;
+    text-align:center;
 }
 
+.header h4{
+    margin:0;
+    font-weight:600;
+}
+
+/* body */
+.body{
+    padding:22px;
+}
+
+/* input */
+select, input[type=file]{
+    width:100%;
+    padding:10px;
+    border-radius:10px;
+    border:1px solid #ddd;
+    margin-top:5px;
+    font-size:13px;
+}
+
+/* button */
 .btn{
-    border-radius: 10px;
+    width:100%;
+    margin-top:15px;
+    padding:10px;
+    border:none;
+    border-radius:10px;
+    background:#1e3c72;
+    color:white;
+    cursor:pointer;
+    transition:0.2s;
 }
 
-.upload-box{
-    max-width: 650px;
-    margin: auto;
+.btn:hover{
+    background:#16325c;
 }
 
-.header-title{
-    background: linear-gradient(135deg, #2c3e50, #3498db);
-    color: white;
-    padding: 18px;
-    border-radius: 15px 15px 0 0;
-    text-align: center;
+/* alert */
+.alert{
+    padding:8px;
+    border-radius:8px;
+    margin-bottom:10px;
+    font-size:13px;
+    text-align:center;
 }
 
-.card-body{
-    padding: 30px;
+.error{ background:#fdecea; color:#e74c3c; }
+.success{ background:#eafaf1; color:#2ecc71; }
+
+/* note */
+.note{
+    font-size:12px;
+    color:#666;
+    margin-top:5px;
 }
 </style>
 
-<!-- ================= UI ================= -->
-<div class="container mt-5 upload-box">
+<div class="wrapper">
 
-    <div class="card shadow-lg border-0">
+    <div class="card">
 
-        <!-- HEADER -->
-        <div class="header-title">
-            <h4> Submit Assignment</h4>
+        <div class="header">
+            <h4>Submit Assignment</h4>
         </div>
 
-        <div class="card-body">
+        <div class="body">
 
-            <?= $msg; ?>
+            <?= $msg ?>
 
             <form method="POST" enctype="multipart/form-data">
 
-                <!-- ASSIGNMENT -->
-                <div class="mb-3">
-                    <label class="form-label fw-bold">Choose Assignment</label>
-                    <select name="assignment_id" class="form-select shadow-sm" required>
-                        <option value="">-- Select Assignment --</option>
+                <label>Choose Assignment</label>
+                <select name="assignment_id" required>
+                    <option value="">Select Assignment</option>
+                    <?php while($a = $assignments->fetch_assoc()){ ?>
+                        <option value="<?= $a['id']; ?>">
+                            <?= htmlspecialchars($a['title']); ?>
+                        </option>
+                    <?php } ?>
+                </select>
 
-                        <?php while($a = $assignments->fetch_assoc()){ ?>
-                            <option value="<?= $a['id']; ?>">
-                                <?= htmlspecialchars($a['title']); ?>
-                            </option>
-                        <?php } ?>
+                <br><br>
 
-                    </select>
+                <label>Upload File</label>
+                <input type="file" name="file" required>
+
+                <div class="note">
+                    Allowed: PDF, DOCX, TXT, PPTX (Max 2MB)
                 </div>
 
-                <!-- FILE -->
-                <div class="mb-3">
-                    <label class="form-label fw-bold">Upload File</label>
-                    <input type="file" name="file" class="form-control shadow-sm" required>
-                    <small class="text-muted">
-                        Allowed: PDF, DOCX, TXT, PPTX (Max 2MB)
-                    </small>
-                </div>
-
-                <!-- BUTTON -->
-                <button type="submit" name="submit"
-                        class="btn btn-primary w-100 shadow-sm"
-                        style="background: linear-gradient(135deg,#3498db,#2c3e50); border:none;">
-                     Submit Assignment
+                <button class="btn" name="submit">
+                    Submit Assignment
                 </button>
 
             </form>
 
         </div>
+
     </div>
 
 </div>
